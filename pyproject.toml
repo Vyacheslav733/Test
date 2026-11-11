@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "demoqa-bookstore-automation"
+version = "1.0.0"
+description = "DemoQA Book Store UI, API and end-to-end automation"
+requires-python = ">=3.12"
+dependencies = [
+  "pytest>=8.3,<10", "playwright>=1.51,<2", "requests>=2.32,<3",
+  "allure-pytest>=2.13,<3", "pytest-xdist>=3.6,<5", "jsonschema[format-nongpl]>=4.23,<5"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = ["unit: offline checks of schemas and assertion helpers", "api: API checks", "ui: browser checks", "e2e: browser and API workflow", "negative: invalid and unauthorized scenarios"]
+
+[tool.setuptools.packages.find]
+include = ["framework*"]

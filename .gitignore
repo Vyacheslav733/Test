@@ -1,0 +1,12 @@
+.venv/
+.playwright/
+*.egg-info/
+__pycache__/
+.pytest_cache/
+*.pyc
+allure-results/
+allure-report/
+test-results/
+.env
+.env.*
+.DS_Store
