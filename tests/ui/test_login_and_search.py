@@ -2,6 +2,7 @@ import allure
 import pytest
 from playwright.sync_api import expect
 
+from framework.config import BASE_URL
 from framework.pages.catalog import CatalogPage
 from framework.pages.login import LoginPage
 from framework.pages.profile import ProfilePage
@@ -72,3 +73,48 @@ def test_profile_without_login(browser_page):
         expect(browser_page.get_by_role("link", name="login", exact=True)).to_be_visible()
         expect(browser_page.locator("#userName-value")).to_have_count(0)
         expect(profile.book_links).to_have_count(0)
+
+
+@pytest.mark.ui
+@allure.title("UI-13: сообщение об ошибке входа ожидается дольше пяти секунд")
+def test_bad_login_waits_for_delayed_message(browser_page):
+    html = """
+    <input id="userName">
+    <input id="password" type="password">
+    <button id="login">Login</button>
+    <script>
+    document.querySelector("#login").onclick = async () => {
+        const response = await fetch("/Account/v1/GenerateToken", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                userName: document.querySelector("#userName").value,
+                password: document.querySelector("#password").value
+            })
+        });
+        const payload = await response.json();
+        if (payload.status === "Failed") {
+            setTimeout(() => {
+                const error = document.createElement("p");
+                error.id = "name";
+                error.textContent = "Invalid username or password!";
+                document.body.append(error);
+            }, 6500);
+        }
+    };
+    </script>
+    """
+    with allure.step("Смоделировать отказ авторизации и задержку сообщения на 6,5 секунды"):
+        browser_page.route(
+            BASE_URL + "/login",
+            lambda route: route.fulfill(status=200, content_type="text/html", body=html),
+        )
+        browser_page.route(
+            BASE_URL + "/Account/v1/GenerateToken",
+            lambda route: route.fulfill(status=200, json={
+                "token": None, "expires": None,
+                "status": "Failed", "result": "User authorization failed.",
+            }),
+        )
+    with allure.step("Проверить, что LoginPage дожидается сообщения после ответа API"):
+        LoginPage(browser_page).open().invalid_login("test-user", "WrongPassword1!")
